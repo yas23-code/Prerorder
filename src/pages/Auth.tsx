@@ -28,27 +28,37 @@ const Auth = () => {
   const [role, setRole] = useState<"student" | "vendor">("student");
   const [loading, setLoading] = useState(false);
 
-  const { signIn, signUp, user, userRole, signInWithGoogle } = useAuth();
+  const { signIn, signUp, user, userRole } = useAuth();
   const navigate = useNavigate();
 
-  // Redirect user after login / signup
+  // 🚀 Redirect only when both user + role exist
   useEffect(() => {
-    if (user && userRole) {
-      navigate(userRole === "vendor" ? "/vendor" : "/student");
+    if (!user || userRole === null) return;
+
+    if (userRole === "vendor") {
+      navigate("/vendor");
+    } else {
+      navigate("/student");
     }
   }, [user, userRole]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
+
     setLoading(true);
+    const timeout = setTimeout(() => setLoading(false), 12000);
 
-    if (isLogin) {
-      await signIn(email, password);
-    } else {
-      await signUp(email, password, name, role);
+    try {
+      if (isLogin) {
+        await signIn(email, password);
+      } else {
+        await signUp(email, password, name, role);
+      }
+    } finally {
+      clearTimeout(timeout);
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (
@@ -77,7 +87,7 @@ const Auth = () => {
             </TabsList>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* SIGN UP EXTRA FIELDS */}
+              {/* SIGN-UP EXTRA FIELDS */}
               <TabsContent value="signup" className="space-y-4">
                 <Label>Full Name</Label>
                 <Input
@@ -91,7 +101,9 @@ const Auth = () => {
                 <Label>I am a</Label>
                 <RadioGroup
                   value={role}
-                  onValueChange={(v) => setRole(v as "student" | "vendor")}
+                  onValueChange={(v) =>
+                    setRole(v as "student" | "vendor")
+                  }
                 >
                   <div className="flex items-center gap-2">
                     <RadioGroupItem value="student" id="student" />
@@ -128,21 +140,6 @@ const Auth = () => {
                   : isLogin
                   ? "Sign In"
                   : "Create Account"}
-              </Button>
-
-              {/* GOOGLE LOGIN BUTTON */}
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full flex gap-2 items-center justify-center"
-                onClick={signInWithGoogle}
-              >
-                <img
-                  src="https://www.svgrepo.com/show/475656/google-color.svg"
-                  alt="google"
-                  className="h-5 w-5"
-                />
-                Continue with Google
               </Button>
             </form>
           </Tabs>

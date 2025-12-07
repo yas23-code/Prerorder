@@ -16,9 +16,6 @@ import VendorRegistration from "./pages/VendorRegistration";
 import MenuManagement from "./pages/MenuManagement";
 import NotFound from "./pages/NotFound";
 
-// ⭐ NEW — Google OAuth callback page
-import AuthCallback from "./pages/AuthCallback";
-
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -31,9 +28,6 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
-
-          {/* ⭐ Required for Google OAuth */}
-          <Route path="/auth/callback" element={<AuthCallback />} />
 
           {/* Student Routes */}
           <Route path="/student" element={<StudentDashboard />} />

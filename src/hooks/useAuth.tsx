@@ -13,8 +13,9 @@ export const useAuth = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+  // Fetch Role from DB
   const fetchRole = async (id: string) => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", id)
@@ -25,6 +26,7 @@ export const useAuth = () => {
     return role;
   };
 
+  // Listen to auth state (refresh / reopen / reload)
   useEffect(() => {
     const fallback = setTimeout(() => setLoading(false), 2000);
     const { data: listener } = supabase.auth.onAuthStateChange(
@@ -54,7 +56,7 @@ export const useAuth = () => {
     };
   }, []);
 
-  // Email Sign Up (role selected manually)
+  // SIGN UP (Stores role inside DB)
   const signUp = async (
     email: string,
     password: string,
@@ -75,6 +77,7 @@ export const useAuth = () => {
           user_id: data.user.id,
           role,
         });
+        setUserRole(role);
       }
 
       toast.success("Account created!");
@@ -83,32 +86,28 @@ export const useAuth = () => {
     }
   };
 
-  // Email Login
+  // SIGN IN (Fetch role immediately)
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       if (error) throw error;
+
+      if (data.user) {
+        await fetchRole(data.user.id); // <-- Fetch role after login
+      }
+
       toast.success("Signed in!");
+      return true;
     } catch (err: any) {
       toast.error(err.message || "Login failed");
+      return false;
     }
   };
 
-  // Google Login (role assigned in callback)
-  const signInWithGoogle = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
-
-    if (error) toast.error("Google login failed");
-  };
-
+  // LOGOUT
   const signOut = async () => {
     await supabase.auth.signOut();
     setUser(null);
@@ -124,6 +123,5 @@ export const useAuth = () => {
     signUp,
     signIn,
     signOut,
-    signInWithGoogle,
   };
 };
