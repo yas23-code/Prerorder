@@ -4,12 +4,62 @@ import { createClient } from '@supabase/supabase-js';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Import the supabase client like this:
-// import { supabase } from "@/integrations/supabase/client";
+const COOKIE_DOMAIN =
+  import.meta.env.VITE_COOKIE_DOMAIN ||
+  (typeof window !== 'undefined' ? window.location.hostname : '');
+
+const COOKIE_PATH = '/';
+const COOKIE_SAMESITE = 'None';
+const COOKIE_SECURE = true;
+
+const cookieStorage = {
+  getItem: (key: string) => {
+    if (typeof document === 'undefined') return null;
+    const cookies = document.cookie.split(';').map((c) => c.trim());
+    for (const c of cookies) {
+      if (c.startsWith(`${encodeURIComponent(key)}=`)) {
+        return decodeURIComponent(c.split('=')[1] || '');
+      }
+    }
+    return null;
+  },
+
+  setItem: (key: string, value: string) => {
+    if (typeof document === 'undefined') return;
+    const parts = [
+      `${encodeURIComponent(key)}=${encodeURIComponent(value)}`,
+      `Path=${COOKIE_PATH}`,
+      `SameSite=${COOKIE_SAMESITE}`,
+      `Secure`,
+    ];
+    if (COOKIE_DOMAIN) parts.push(`Domain=${COOKIE_DOMAIN}`);
+    document.cookie = parts.join('; ');
+  },
+
+  removeItem: (key: string) => {
+    if (typeof document === 'undefined') return;
+    const parts = [
+      `${encodeURIComponent(key)}=`,
+      `Path=${COOKIE_PATH}`,
+      'Expires=Thu, 01 Jan 1970 00:00:00 GMT',
+      'SameSite=None',
+      'Secure',
+    ];
+    if (COOKIE_DOMAIN) parts.push(`Domain=${COOKIE_DOMAIN}`);
+    document.cookie = parts.join('; ');
+  },
+};
+
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
-    storage: localStorage,
+    flowType: 'pkce',
+    storage: cookieStorage as unknown as Storage,
     persistSession: true,
     autoRefreshToken: true,
-  }
+    detectSessionInUrl: true,
+    cookies: {
+      sameSite: 'none',
+      secure: true,
+    },
+  },
 });
